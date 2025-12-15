@@ -18,7 +18,7 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         self.mask_percentage = mask_percentage
 
         # self.tokenizer_mask = tokenizer.mask_token
-        self.tokenizer_mask = b"<mask>"
+        self.tokenizer_mask = "<mask>"  # dummy token
 
     def __len__(self):
         return len(self.samples)
@@ -30,7 +30,8 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         num_tokens_to_mask = (len(code_label) * self.mask_percentage) // 100
 
         code_tree = self.parser.parse(bytes(code_string, "utf-8"))
-        code_identifiers = self._get_identifiers(code_tree)
+
+        code_identifiers = self._get_identifiers(code_tree.root_node)
 
         # use all identifiers in case there is less than number of tokens
         num_tokens_to_mask = (
@@ -46,7 +47,9 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         masked_string = self.mask_identifiers(code_string, sampled_identifiers)
         masked_input = self.tokenizer(masked_string)
 
-        return code_label, masked_input
+        sample = {"label": code_label, "masked_input": masked_input}
+
+        return sample
 
     @staticmethod
     def _get_identifiers(root_node):
@@ -60,10 +63,15 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
                     identifiers.append(
                         (children_node.start_byte, children_node.end_byte)
                     )
+
+                if children_node.type == "comment":
+                    # Ignore comments, maybe the dataset could be preprocessed and remove comments...
+                    continue
+
                 tree_traversal(children_node)
-            return identifiers
 
         tree_traversal(root_node)
+
         return identifiers
 
     @staticmethod
@@ -78,7 +86,7 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         for mask in masks:
             start, end = mask[0], mask[1]
 
-            # label = code_string[start + offset : end + offset]
+            ## label = code_string[start + offset : end + offset]
             # mask the code string
             code_string = (
                 code_string[: start + offset]
@@ -88,5 +96,6 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
 
             # because we modify the string, we need an offest for the modifications
             # the len will be 6 because the mask is "<mask>"" in codebert minus the difference
-            offset += len(self.tokenizer_mask) - end - start
+            difference = end - start
+            offset += len(self.tokenizer_mask) - difference
         return code_string
