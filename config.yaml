@@ -1,0 +1,10 @@
+train:
+  dataset_file: "dataset.parquet"
+  batch_size: 5
+  lr: 0.0001
+  seed: 42
+
+files:
+  data: "dataset.parquet"
+
+model: "microsoft/codebert-base"
