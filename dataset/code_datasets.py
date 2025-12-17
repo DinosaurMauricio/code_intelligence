@@ -27,18 +27,10 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         code_string = self.samples.iloc[idx].func_code_string
         code_label = self.tokenizer(code_string)
 
-        num_tokens_to_mask = (len(code_label) * self.mask_percentage) // 100
-
         code_tree = self.parser.parse(bytes(code_string, "utf-8"))
 
         code_identifiers = self._get_identifiers(code_tree.root_node)
-
-        # use all identifiers in case there is less than number of tokens
-        num_tokens_to_mask = (
-            num_tokens_to_mask
-            if len(code_identifiers) > num_tokens_to_mask
-            else len(code_identifiers)
-        )
+        num_tokens_to_mask = (len(code_identifiers) * self.mask_percentage) // 100
 
         sampled_identifiers = self.sample_identifiers(
             code_identifiers, num_tokens_to_mask

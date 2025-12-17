@@ -1,3 +1,4 @@
+import torch
 from torch.nn.utils.rnn import pad_sequence
 
 
@@ -7,11 +8,11 @@ def collate_fn(batch, pad_id):
     labels = []
 
     for sample in batch:
-        masked_inputs.append(sample["masked_input"]["input_ids"].squeeze(0))
+        masked_inputs.append(torch.tensor(sample["masked_input"]["input_ids"]))
         masked_inputs_attention.append(
-            sample["masked_input"]["attention_mask"].squeeze(0)
+            torch.tensor(sample["masked_input"]["attention_mask"])
         )
-        labels.append(sample["label"]["input_ids"].squeeze(0))
+        labels.append(torch.tensor(sample["label"]["input_ids"]))
 
     padded_input = pad_sequence(masked_inputs, padding_value=pad_id, batch_first=True)
     padded_input_attention = pad_sequence(
