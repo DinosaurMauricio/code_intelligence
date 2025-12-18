@@ -17,16 +17,15 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         self.parser = parser
         self.mask_percentage = mask_percentage
 
-        # self.tokenizer_mask = tokenizer.mask_token
-        self.tokenizer_mask = "<mask>"  # dummy token
+        self.tokenizer_mask = tokenizer.mask_token
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
         code_string = self.samples.iloc[idx].func_code_string
-        code_label = self.tokenizer(code_string)
 
+        # parse the code string
         code_tree = self.parser.parse(bytes(code_string, "utf-8"))
 
         code_identifiers = self._get_identifiers(code_tree.root_node)
@@ -37,9 +36,8 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         )
 
         masked_string = self.mask_identifiers(code_string, sampled_identifiers)
-        masked_input = self.tokenizer(masked_string)
 
-        sample = {"label": code_label, "masked_input": masked_input}
+        sample = {"labels": code_string, "masked_input": masked_string}
 
         return sample
 
@@ -73,21 +71,32 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         sampled_identifiers = sorted(sampled_identifiers, key=lambda x: x[0])
         return sampled_identifiers
 
-    def mask_identifiers(self, code_string, masks):
+    def mask_identifiers(self, code_string, masks, single_token=False):
+        # single_token flag is just in to predict the first token
+        # else it will multiply the mask token
         offset = 0
+        labels = []
         for mask in masks:
             start, end = mask[0], mask[1]
 
-            ## label = code_string[start + offset : end + offset]
+            label = code_string[start + offset : end + offset]
+
+            # labels.append(label)
+
+            label_tokens = len(
+                self.tokenizer("demand", add_special_tokens=False)["input_ids"]
+            )
+
             # mask the code string
             code_string = (
                 code_string[: start + offset]
                 + self.tokenizer_mask
+                * label_tokens  # TODO: Worth the shot just taking the first token of the label
                 + code_string[end + offset :]
             )
 
             # because we modify the string, we need an offest for the modifications
             # the len will be 6 because the mask is "<mask>"" in codebert minus the difference
             difference = end - start
-            offset += len(self.tokenizer_mask) - difference
-        return code_string
+            offset += len(self.tokenizer_mask) * label_tokens - difference
+        return code_string  # , labels
