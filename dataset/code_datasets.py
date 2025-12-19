@@ -14,10 +14,11 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
     ):
         self.samples = data
         self.tokenizer = tokenizer
+        # add to tokenizer vocabulary <mask_holder>
+        self.tokenizer.add_tokens(["<mask_holder>"])
+
         self.parser = parser
         self.mask_percentage = mask_percentage
-
-        self.tokenizer_mask = tokenizer.mask_token
 
     def __len__(self):
         return len(self.samples)
@@ -37,7 +38,10 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
 
         masked_string = self.mask_identifiers(code_string, sampled_identifiers)
 
-        sample = {"labels": code_string, "masked_input": masked_string}
+        sample = {
+            "label": self.samples.iloc[idx].func_code_string,
+            "masked_input": masked_string,
+        }
 
         return sample
 
@@ -71,32 +75,51 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         sampled_identifiers = sorted(sampled_identifiers, key=lambda x: x[0])
         return sampled_identifiers
 
-    def mask_identifiers(self, code_string, masks, single_token=False):
-        # single_token flag is just in to predict the first token
-        # else it will multiply the mask token
-        offset = 0
+    def mask_identifiers(self, code_string, masks):
         labels = []
-        for mask in masks:
+        offset = 0
+
+        for mask in masks:  # masks are the identifiers
             start, end = mask[0], mask[1]
 
-            label = code_string[start + offset : end + offset]
+            if code_string[start + offset - 1] == " ":
+                # This is because the tokenizer before a space it might tokenize it together for example kwargs without
+                # space is kw, args. if  before there was a space it would make it Ġk, wa, rgs which is completly differnt
+                # in this case we just attach the space if before there was a space
+                start -= 1
 
-            # labels.append(label)
+            identifier_label = code_string[start + offset : end + offset]
+            labels.append(identifier_label)
 
-            label_tokens = len(
-                self.tokenizer("demand", add_special_tokens=False)["input_ids"]
-            )
-
-            # mask the code string
+            # set a temporary token to get the position, this is because if we mask and
+            # then tokenize, its more difficult to find the positions. This way we can
+            # add a place holder token on the identifiers and after tokenizing it
+            # its possible to change the holder with the true tokenized identifiers
             code_string = (
                 code_string[: start + offset]
-                + self.tokenizer_mask
-                * label_tokens  # TODO: Worth the shot just taking the first token of the label
+                + "<mask_holder>"
                 + code_string[end + offset :]
             )
 
-            # because we modify the string, we need an offest for the modifications
-            # the len will be 6 because the mask is "<mask>"" in codebert minus the difference
             difference = end - start
-            offset += len(self.tokenizer_mask) * label_tokens - difference
-        return code_string  # , labels
+            offset += len("<mask_holder>") - difference
+
+        tokenized_code = self.tokenizer.tokenize(code_string)
+
+        # replace the mask place holder with the actual mask
+        index = 0
+        while len(labels) > 0:
+            token = tokenized_code[index]
+            if token == "<mask_holder>":
+                identifier = labels.pop(0)
+                ## TODO: Worth the shot just taking the first token of the label when it tokenizes
+                ## for example long variables and just masks part of it
+                tokenized_code = (
+                    tokenized_code[:index]
+                    + [self.tokenizer.mask_token]
+                    * len(self.tokenizer.tokenize(identifier))
+                    + tokenized_code[index + 1 :]
+                )
+            index += 1
+
+        return tokenized_code
