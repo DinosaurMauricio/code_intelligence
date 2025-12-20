@@ -20,6 +20,8 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         self.parser = parser
         self.mask_percentage = mask_percentage
 
+        self.tokenizer_mask = tokenizer.mask_token
+
     def __len__(self):
         return len(self.samples)
 
@@ -106,7 +108,6 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
 
         tokenized_code = self.tokenizer.tokenize(code_string)
 
-        # replace the mask place holder with the actual mask
         index = 0
         while len(labels) > 0:
             token = tokenized_code[index]
@@ -121,5 +122,21 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
                     + tokenized_code[index + 1 :]
                 )
             index += 1
+
+        max = 256
+
+        if len(tokenized_code) >= max - 2:
+            tokenized_code = tokenized_code[
+                : max - 2
+            ]  #  truncate it. -2 because need to add bos and eos token
+
+        tokenized_code = (
+            [self.tokenizer.bos_token] + tokenized_code + [self.tokenizer.eos_token]
+        )
+
+        padding = [self.tokenizer.pad_token] * (max - len(tokenized_code))
+        tokenized_code = tokenized_code + padding
+
+        tokenized_code = self.tokenizer.convert_tokens_to_ids(tokenized_code)
 
         return tokenized_code
