@@ -11,7 +11,6 @@ def load_data(path: str) -> pd.DataFrame:
 
 
 class DatasetBuilder:
-
     def __init__(self, tokenizer, parser):
         self.dataset_partial = partial(
             CodeRefactoringDataset,
@@ -22,7 +21,7 @@ class DatasetBuilder:
     def build(
         self,
         data: pd.DataFrame,
-        splits: list[str] = ["train", "valid", "test"],
+        splits: list[str] = ["train", "val", "test"],
     ) -> dict[str, CodeRefactoringDataset]:
 
         assert len(splits) != 0, "need to provide at least one split"
@@ -37,9 +36,9 @@ class DatasetBuilder:
 
 
 class DataLoaderBuilder:
-    def __init__(self, collate_fn, config):
+    def __init__(self, collate_fn, batch_size):
         self.collate_fn = collate_fn
-        self.config = config
+        self.batch_size = batch_size
 
     def build(
         self, datasets: dict[str, CodeRefactoringDataset]
@@ -50,7 +49,7 @@ class DataLoaderBuilder:
             dataloader_dict[split] = DataLoader(
                 data,
                 shuffle=True if split == "train" else False,
-                batch_size=self.config.train.batch_size,
+                batch_size=self.batch_size,
                 collate_fn=self.collate_fn,
             )
         return dataloader_dict

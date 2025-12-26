@@ -77,7 +77,6 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         sampled_identifiers = sorted(sampled_identifiers, key=lambda x: x[0])
         return sampled_identifiers
 
-    # TODO: Clean this method
     def mask_identifiers(self, code_string, masks):
         labels = []
         offset = 0
@@ -126,8 +125,6 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
                 ## TODO: Worth the shot just taking the first token of the label when it tokenizes
                 ## for example long variables and just masks part of it
 
-                print(self.tokenizer.tokenize(identifier))
-                print(identifier)
                 tokenized_code = (
                     tokenized_code[:index]
                     + [self.tokenizer.mask_token]
