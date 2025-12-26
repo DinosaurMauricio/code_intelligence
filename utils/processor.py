@@ -1,9 +1,10 @@
 import random
 
+from utils.constants import MASK_PLACEHOLDER
+
 
 class CodeMaskingProcessor:
 
-    MASK_PLACEHOLDER = "<mask_holder>"
     SPACE_BYTE = 32
 
     def __init__(self, tokenizer, max_length=256):
@@ -65,7 +66,7 @@ class CodeMaskingProcessor:
         # with chinese characters the position might differ, encoding it
         # fixes this issue
         code_bytes = code_string.encode("utf8")
-        mask_holder = self.MASK_PLACEHOLDER.encode("utf-8")
+        mask_holder = MASK_PLACEHOLDER.encode("utf-8")
 
         offset = 0
         labels = []
@@ -100,7 +101,7 @@ class CodeMaskingProcessor:
         index = 0
         while len(labels) > 0:
             token = tokenized_code[index]
-            if token == self.MASK_PLACEHOLDER:
+            if token == MASK_PLACEHOLDER:
                 identifier = labels.pop(0)
                 ## TODO: Worth the shot just taking the first token of the label when it tokenizes
                 ## for example long variables and just masks part of it

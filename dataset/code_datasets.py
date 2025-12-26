@@ -2,7 +2,6 @@ import torch
 import pandas as pd
 
 from utils.parser import CodeParser
-from utils.processor import CodeMaskingProcessor
 
 
 class CodeRefactoringDataset(torch.utils.data.Dataset):
@@ -10,15 +9,13 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         self,
         data: pd.DataFrame,
         parser: CodeParser,
-        tokenizer,
+        code_masker,
         mask_percentage: int = 15,
     ):
         self.samples = data
-        self.tokenizer = tokenizer
         self.parser = parser
         self.mask_percentage = mask_percentage
-        # this could be injected but because only using python right now this is fine
-        self.code_masker = CodeMaskingProcessor(tokenizer)
+        self.code_masker = code_masker
 
     def __len__(self):
         return len(self.samples)
@@ -38,8 +35,8 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
         )
 
         masked_input = self.code_masker.apply_masking(
-            code_string,
             sampled_identifiers,
+            code_string,
         )
 
         sample = {
