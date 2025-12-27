@@ -34,14 +34,14 @@ class CodeRefactoringDataset(torch.utils.data.Dataset):
             code_identifiers, num_tokens_to_mask
         )
 
-        masked_input = self.code_masker.apply_masking(
-            sampled_identifiers,
+        input, labels = self.code_masker.apply_masking(
             code_string,
+            sampled_identifiers,
         )
 
         sample = {
-            "label": code_string,
-            "masked_input": masked_input,
+            "label": labels,
+            "input": input,
         }
 
         return sample

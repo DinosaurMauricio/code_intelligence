@@ -6,9 +6,12 @@ from utils.constants import MASK_PLACEHOLDER
 class CodeMaskingProcessor:
 
     SPACE_BYTE = 32
+    IGNORE_LABEL_ID = -100
 
     def __init__(self, tokenizer, max_length=256):
         self.tokenizer = tokenizer
+        # TODO: check how truncating affects as some codes are to big, they have +1000 words
+        # maybe I can first truncate and then mask. Or I can just filter the dataset
         self.max_length = max_length
 
     @staticmethod
@@ -44,20 +47,29 @@ class CodeMaskingProcessor:
     def apply_masking(self, code_string, masks_positions):
 
         original_identifiers, code_with_placeholders = self._insert_placeholders(
-            code_string,
             masks_positions,
+            code_string,
         )
 
         code_tokens = self.tokenizer.tokenize(code_with_placeholders)
 
-        masked_tokens = self._replace_placeholders_with_masks(
+        masked_tokens, label = self._replace_placeholders_with_masks(
             original_identifiers,
             code_tokens,
         )
 
         padded_tokens = self._add_special_tokens_and_padding(masked_tokens)
 
-        return self.tokenizer.convert_tokens_to_ids(padded_tokens)
+        attention = [
+            1 if token != self.tokenizer.pad_token else 0 for token in padded_tokens
+        ]
+
+        input = {
+            "token_ids": self.tokenizer.convert_tokens_to_ids(padded_tokens),
+            "attention": attention,
+        }
+
+        return input, label
 
     def _insert_placeholders(self, masks_positions, code_string: str):
 
@@ -99,21 +111,39 @@ class CodeMaskingProcessor:
 
     def _replace_placeholders_with_masks(self, labels, tokenized_code):
         index = 0
+        # problem again is the tokenizer, for example "._iterate" will tokenize "._", "iterate"
+        # messing the positions if naming starting with "_" exists on the method, so
+        # building the labels here
+        label = [self.IGNORE_LABEL_ID]  # bos token but set it already to -100 to ignore
         while len(labels) > 0:
             token = tokenized_code[index]
             if token == MASK_PLACEHOLDER:
                 identifier = labels.pop(0)
+                identifier_tokens = self.tokenizer(
+                    identifier, add_special_tokens=False
+                )["input_ids"]
+                label.extend(identifier_tokens)
                 ## TODO: Worth the shot just taking the first token of the label when it tokenizes
                 ## for example long variables and just masks part of it
+                identifier_len = len(identifier_tokens)
                 tokenized_code = (
                     tokenized_code[:index]
-                    + [self.tokenizer.mask_token]
-                    * len(self.tokenizer.tokenize(identifier))
+                    + [self.tokenizer.mask_token] * identifier_len
                     + tokenized_code[index + 1 :]
                 )
+
+                index += identifier_len - 1
+            else:
+                label.append(self.IGNORE_LABEL_ID)
             index += 1
 
-        return tokenized_code
+        # pad it or truncate it
+        if len(label) >= self.max_length:
+            label = label[: self.max_length]
+        else:
+            label.extend([self.IGNORE_LABEL_ID] * (self.max_length - len(label)))
+
+        return tokenized_code, label
 
     def _add_special_tokens_and_padding(self, tokenized_code):
 

@@ -48,7 +48,7 @@ dataloaders = DataLoaderBuilder(partial_collate_fn, config).build(datasets)
 for param in model.parameters():
     param.requires_grad = False
 
-for param in model.lm_head.parameters():
+for param in model.lm_head.parameters():  # type: ignore
     param.requires_grad = True
 
 params = sum(p.numel() for p in model.parameters() if p.requires_grad)
