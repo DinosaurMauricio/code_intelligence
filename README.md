@@ -14,9 +14,9 @@ Initial fine-tuning shows ~1% accuracy improvement over pretrained baseline on t
 
 ### TODO
 
-- [ ] Implement Top-K accuracy metrics (Top-5, Top-10)
+- [x] Implement Top-K accuracy metrics (Top-5)
 - [ ] Experiment with removing docstrings from input
-- [ ] Systematic comparison: with vs without docstrings
+- [ ] Comparison: with vs without docstrings
 
 **Futere task. Code Generation:**
 
@@ -37,8 +37,7 @@ code_refactoring/
 │   ├── data.py               # Data utilities
 │   ├── parser.py             # Code parsing
 │   ├── processor.py          # Masking logic
-│   ├── trainer.py            # Training loop and evaluation
-│   └── __pycache__/
+│   └── trainer.py            # Training loop and evaluation
 ├── config.yaml               # Hyperparameters and settings
 ├── main.py                   # Training entry point
 ├── dataset_builder.ipynb     # Dataset exploration and creation
