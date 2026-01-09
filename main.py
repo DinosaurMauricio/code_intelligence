@@ -3,6 +3,7 @@ import torch
 
 from functools import partial
 from omegaconf import OmegaConf
+from peft import LoraConfig, get_peft_model
 
 from utils.collate import collate_fn
 from utils.data import load_data, DatasetBuilder, DataLoaderBuilder
@@ -45,11 +46,15 @@ for key, dataset in datasets.items():
 partial_collate_fn = partial(collate_fn, tokenizer=tokenizer)
 dataloaders = DataLoaderBuilder(partial_collate_fn, config).build(datasets)
 
-for param in model.parameters():
-    param.requires_grad = False
+lora_config = LoraConfig(
+    r=16,  # rank
+    lora_alpha=16,
+    lora_dropout=0.1,
+    target_modules=["query", "value"],
+)
 
-for param in model.lm_head.parameters():  # type: ignore
-    param.requires_grad = True
+model = get_peft_model(model, lora_config)
+model.print_trainable_parameters()
 
 params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print(f"Number of trainable params: {params}")
