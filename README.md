@@ -4,8 +4,6 @@ Exploring AI-assisted code understanding.
 
 I documented some notes of my understanding of some key papers: [Overleaf link](https://www.overleaf.com/project/69243c0c9d1a8b982fac51ba).
 
-**Note**: _Notes include AI-assisted formatting for clarity, with all technical content manually reviewed_
-
 ## Project Overview
 
 This repository contains my exploration of neural code models, specifically focusing on identifier prediction as a task for understanding code semantics. The work uses CodeBERT fine-tuned on Python code from CodeSearchNet to predict masked variable and function names.
