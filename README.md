@@ -8,12 +8,10 @@ I documented some notes of my understanding of some key papers: [Overleaf link](
 
 This repository contains my exploration of neural code models, specifically focusing on identifier prediction as a task for understanding code semantics. The work uses CodeBERT fine-tuned on Python code from CodeSearchNet to predict masked variable and function names.
 
-Initial fine-tuning shows ~1% accuracy improvement over pretrained baseline on test set. However, simple accuracy may not fully capture performance on this task (large vocabulary, multiple valid names possible). Top-K metrics and deeper analysis needed.
-
 ### TODO
 
 - [x] Implement Top-K accuracy metrics (Top-5)
-- [ ] Experiment with removing docstrings from input
+- [x] Experiment with removing docstrings from input
 - [ ] Comparison: with vs without docstrings
 
 **Futere task. Code Generation:**
