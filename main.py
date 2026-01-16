@@ -37,7 +37,11 @@ model.to(device)
 optimizer = torch.optim.AdamW(model.parameters(), lr=config.train.lr)
 scaler = torch.amp.GradScaler(device=device)  # type: ignore
 
-datasets = DatasetBuilder(CodeParser(), CodeMaskingProcessor(tokenizer)).build(data)
+datasets = DatasetBuilder(
+    CodeParser(),
+    CodeMaskingProcessor(tokenizer),
+    config.train.remove_docstring,
+).build(data)
 
 for key, dataset in datasets.items():
     print(f"[{key}] split: {len(dataset)} samples")

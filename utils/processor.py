@@ -1,4 +1,5 @@
 import random
+import re
 
 from utils.constants import MASK_PLACEHOLDER
 
@@ -13,6 +14,12 @@ class CodeMaskingProcessor:
         # TODO: check how truncating affects as some codes are to big, they have +1000 words
         # maybe I can first truncate and then mask. Or I can just filter the dataset
         self.max_length = max_length
+
+    @staticmethod
+    def remove_docstrings_regex(source):
+        source = re.sub(r'"""[\s\S]*?"""', "", source)
+        source = re.sub(r"'''[\s\S]*?'''", "", source)
+        return source
 
     @staticmethod
     def extract_identifiers(root_node):

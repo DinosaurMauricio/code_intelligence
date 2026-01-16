@@ -11,9 +11,12 @@ def load_data(path: str) -> pd.DataFrame:
 
 
 class DatasetBuilder:
-    def __init__(self, parser, code_masker):
+    def __init__(self, parser, code_masker, remove_docstring):
         self.dataset_partial = partial(
-            CodeRefactoringDataset, parser=parser, code_masker=code_masker
+            CodeRefactoringDataset,
+            parser=parser,
+            code_masker=code_masker,
+            remove_docstring=remove_docstring,
         )
 
     def build(
